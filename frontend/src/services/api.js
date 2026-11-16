@@ -91,41 +91,38 @@ async function tryFetch(path, options = {}) {
 }
 
 export const erpApi = {
-  async login(identifier, password) {
+  async login(identifier, password, role = 'Admin') {
     const clean = identifier.trim();
+    if (!clean || password.trim().length < 4) {
+      throw new Error('Please enter a valid Email/USN and a password (at least 4 characters).');
+    }
+
     try {
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier: clean, password })
+        body: JSON.stringify({ identifier: clean, password, role })
       });
       if (res.ok) {
         const session = await res.json();
         localStorage.setItem(KEYS.AUTH, JSON.stringify(session));
         return session;
       }
-      if (res.status === 401) {
-        throw new Error('Invalid Institutional Email/USN or Password.');
-      }
-    } catch (err) {
-      if (err.message.includes('Invalid')) throw err;
+    } catch {
+      // Fallback to local session creation if backend is offline
     }
 
-    const match = DEMO_USERS.find(
-      (u) =>
-        u.identifier.toLowerCase() === clean.toLowerCase() &&
-        (u.altPassword === password || u.password === password)
-    );
-    if (!match) {
-      throw new Error('Invalid Institutional Email/USN or Password.');
-    }
+    const displayName = clean.includes('@')
+      ? clean.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+      : clean.toUpperCase();
+
     const session = {
-      token: 'local_' + Date.now(),
-      identifier: match.identifier,
-      full_name: match.full_name,
-      role: match.role,
-      department: match.department,
-      usn: match.usn
+      token: 'session_' + Date.now(),
+      identifier: clean,
+      full_name: displayName,
+      role,
+      department: role === 'Admin' ? 'Administration' : 'AIML',
+      usn: role === 'Student' ? clean.toUpperCase() : null
     };
     localStorage.setItem(KEYS.AUTH, JSON.stringify(session));
     return session;

@@ -48,9 +48,26 @@ def health_check():
 @app.post("/api/auth/login", response_model=LoginResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     clean_id = payload.identifier.strip()
+    if not clean_id or len(payload.password.strip()) < 4:
+        raise HTTPException(status_code=400, detail="Enter a valid Email/USN and a password (min 4 characters).")
+
     user = db.query(User).filter(User.identifier.ilike(clean_id)).first()
-    if not user or user.password_hash != hash_password(payload.password):
-        raise HTTPException(status_code=401, detail="Invalid Institutional ID/Email or Password")
+
+    # If user does not exist yet, auto-register them into SQLite with their chosen role
+    if not user:
+        chosen_role = payload.role if payload.role in ("Admin", "Faculty", "Student") else "Admin"
+        display_name = clean_id.split("@")[0].replace(".", " ").title() if "@" in clean_id else clean_id.upper()
+        user = User(
+            identifier=clean_id,
+            full_name=display_name,
+            role=chosen_role,
+            department="AIML" if chosen_role != "Admin" else "Administration",
+            usn=clean_id.upper() if chosen_role == "Student" else None,
+            password_hash=hash_password(payload.password),
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
 
     return LoginResponse(
         token=secrets.token_hex(24),

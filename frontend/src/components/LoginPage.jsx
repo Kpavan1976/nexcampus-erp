@@ -9,64 +9,54 @@ import {
   UserCheck,
   GraduationCap,
   ArrowRight,
-  AlertCircle,
-  KeyRound
+  AlertCircle
 } from 'lucide-react';
 
-const ROLE_PRESETS = [
+const ROLES = [
   {
-    role: 'Admin',
+    id: 'Admin',
     label: 'Admin / Registrar',
     icon: Shield,
-    identifier: 'admin@nexcampus.edu.in',
-    password: 'Admin@123',
-    hint: 'Full ERP, Fee Ledger, Admissions & Analytics'
+    desc: 'Full ERP control, fee ledger, student admissions & analytics'
   },
   {
-    role: 'Faculty',
-    label: 'Faculty / HOD',
+    id: 'Faculty',
+    label: 'Faculty / Professor',
     icon: UserCheck,
-    identifier: 'r.kulkarni@nexcampus.edu.in',
-    password: 'Faculty@123',
-    hint: 'Daily Attendance Register & CIE Internal Marks'
+    desc: 'Daily subject attendance register & CIE internal marks'
   },
   {
-    role: 'Student',
+    id: 'Student',
     label: 'Student Portal',
     icon: GraduationCap,
-    identifier: '4GM25AI001',
-    password: 'Student@123',
-    hint: 'SGPA/CGPA Transcript & 75% Target Calculator'
+    desc: 'SGPA/CGPA transcript, fee receipt & 75% attendance calculator'
   }
 ];
 
 export default function LoginPage({ onLogin }) {
-  const [selectedPreset, setSelectedPreset] = useState('Admin');
-  const [identifier, setIdentifier] = useState('admin@nexcampus.edu.in');
-  const [password, setPassword] = useState('Admin@123');
+  const [role, setRole] = useState('Admin');
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSelectRolePreset = (preset) => {
-    setSelectedPreset(preset.role);
-    setIdentifier(preset.identifier);
-    setPassword(preset.password);
-    setError('');
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!identifier.trim() || !password.trim()) {
-      setError('Please enter both your Institutional ID / Email and Password.');
+    if (!identifier.trim()) {
+      setError('Please enter your Email address or Student USN.');
+      return;
+    }
+    if (password.trim().length < 4) {
+      setError('Please enter a password (minimum 4 characters).');
       return;
     }
     setSubmitting(true);
     setError('');
     try {
-      await onLogin(identifier, password);
+      await onLogin(identifier, password, role);
     } catch (err) {
-      setError(err.message || 'Authentication failed. Check your credentials.');
+      setError(err.message || 'Unable to sign in. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -78,6 +68,7 @@ export default function LoginPage({ onLogin }) {
       <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-cyan-500/15 blur-3xl" />
 
       <div className="relative z-10 grid w-full max-w-5xl grid-cols-1 overflow-hidden rounded-3xl border border-white/10 bg-[#111827]/90 shadow-2xl backdrop-blur-xl lg:grid-cols-12">
+        {/* Left Role Selection Panel */}
         <div className="flex flex-col justify-between border-b border-white/10 bg-gradient-to-br from-indigo-600/20 via-[#111827] to-cyan-600/10 p-8 lg:col-span-5 lg:border-b-0 lg:border-r">
           <div>
             <div className="flex items-center gap-3">
@@ -91,26 +82,25 @@ export default function LoginPage({ onLogin }) {
             </div>
 
             <h1 className="mt-8 text-2xl font-extrabold leading-snug text-white">
-              Unified Academic &amp; Campus Intelligence
+              Select Your Workspace Role
             </h1>
             <p className="mt-2 text-xs leading-relaxed text-slate-400">
-              Sign in with your university credentials to access real-time attendance analytics, CIE internal marks, and student 360° records.
+              Choose your role below and sign in with any email/USN and password to launch your workspace.
             </p>
 
-            <div className="mt-8 space-y-2.5">
-              <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                <KeyRound className="h-3.5 w-3.5 text-cyan-400" />
-                One-Click Demo Credentials
-              </div>
-              {ROLE_PRESETS.map((preset) => {
-                const Icon = preset.icon;
-                const active = selectedPreset === preset.role;
+            <div className="mt-7 space-y-3">
+              {ROLES.map((item) => {
+                const Icon = item.icon;
+                const active = role === item.id;
                 return (
                   <button
-                    key={preset.role}
+                    key={item.id}
                     type="button"
-                    onClick={() => handleSelectRolePreset(preset)}
-                    className={`w-full rounded-xl border p-3 text-left transition ${
+                    onClick={() => {
+                      setRole(item.id);
+                      setError('');
+                    }}
+                    className={`w-full rounded-xl border p-3.5 text-left transition ${
                       active
                         ? 'border-indigo-500/60 bg-indigo-500/15 shadow-sm'
                         : 'border-white/10 bg-[#0B0F19]/60 hover:border-white/20'
@@ -119,11 +109,15 @@ export default function LoginPage({ onLogin }) {
                     <div className="flex items-center justify-between">
                       <span className="flex items-center gap-2 text-xs font-bold text-white">
                         <Icon className={`h-4 w-4 ${active ? 'text-cyan-400' : 'text-slate-400'}`} />
-                        {preset.label}
+                        {item.label}
                       </span>
-                      <span className="font-mono text-[11px] text-indigo-300">{preset.identifier}</span>
+                      {active && (
+                        <span className="rounded bg-cyan-500/20 px-2 py-0.5 text-[10px] font-semibold text-cyan-300">
+                          Selected
+                        </span>
+                      )}
                     </div>
-                    <p className="mt-1 text-[11px] text-slate-400">{preset.hint}</p>
+                    <p className="mt-1 text-[11px] text-slate-400">{item.desc}</p>
                   </button>
                 );
               })}
@@ -131,18 +125,19 @@ export default function LoginPage({ onLogin }) {
           </div>
 
           <div className="mt-8 border-t border-white/10 pt-4 text-[11px] text-slate-500">
-            ISO 27001 Compliant Campus Auth • AY 2026–27
+            NexCampus Authentication Gateway • AY 2026–27
           </div>
         </div>
 
+        {/* Right Sign-In Form */}
         <div className="flex flex-col justify-center p-8 sm:p-12 lg:col-span-7">
           <div className="mb-6">
             <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-300">
-              Single Sign-On (SSO)
+              {role} Login
             </span>
             <h2 className="mt-3 text-2xl font-bold text-white">Sign in to your account</h2>
             <p className="mt-1 text-sm text-slate-400">
-              Enter your University Email or Student USN (e.g., <span className="font-mono text-slate-300">4GM25AI001</span>)
+              Enter any email address or USN and your chosen password
             </p>
           </div>
 
@@ -156,7 +151,7 @@ export default function LoginPage({ onLogin }) {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-300">
-                Institutional Email or USN
+                Email Address or USN
               </label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
@@ -164,28 +159,23 @@ export default function LoginPage({ onLogin }) {
                   type="text"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="admin@nexcampus.edu.in or 4GM25AI001"
+                  placeholder="Enter your email or USN..."
                   className="w-full rounded-xl border border-white/10 bg-[#0B0F19] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <div className="mb-1.5 flex items-center justify-between">
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-300">
-                  Password
-                </label>
-                <span className="font-mono text-[11px] text-slate-500">
-                  Default: {selectedPreset}@123
-                </span>
-              </div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-300">
+                Password
+              </label>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••"
+                  placeholder="Enter any password..."
                   className="w-full rounded-xl border border-white/10 bg-[#0B0F19] py-2.5 pl-10 pr-11 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none"
                 />
                 <button
@@ -203,7 +193,7 @@ export default function LoginPage({ onLogin }) {
               disabled={submitting}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/25 hover:from-indigo-500 hover:to-cyan-500 disabled:opacity-50 transition"
             >
-              {submitting ? 'Authenticating...' : 'Sign In to NexCampus ERP'}
+              {submitting ? 'Signing In...' : `Continue as ${role}`}
               <ArrowRight className="h-4 w-4" />
             </button>
           </form>

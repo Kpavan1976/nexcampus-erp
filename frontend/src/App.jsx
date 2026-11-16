@@ -61,14 +61,14 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  const handleLogin = async (identifier, password) => {
-    const session = await erpApi.login(identifier, password);
+ const handleLogin = async (identifier, password, selectedRole) => {
+    const session = await erpApi.login(identifier, password, selectedRole);
     setUser(session);
     setRole(session.role);
     if (session.role === 'Student') setActiveTab('student-portal');
     else if (session.role === 'Faculty') setActiveTab('faculty-workspace');
     else setActiveTab('dashboard');
-    notify(`Welcome back, ${session.full_name}`);
+    notify(`Welcome, ${session.full_name}`);
   };
 
   const handleLogout = () => {
