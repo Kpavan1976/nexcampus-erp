@@ -9,8 +9,10 @@ import {
   UserCheck,
   GraduationCap,
   ArrowRight,
-  AlertCircle
+  AlertCircle,
+  Users
 } from 'lucide-react';
+import { INITIAL_STUDENTS } from '../data/seedData';
 
 const ROLES = [
   {
@@ -29,11 +31,11 @@ const ROLES = [
     id: 'Student',
     label: 'Student Portal',
     icon: GraduationCap,
-    desc: 'SGPA/CGPA transcript, fee receipt & 75% attendance calculator'
+    desc: 'Select any student from the list to view their SGPA & 75% calculator'
   }
 ];
 
-export default function LoginPage({ onLogin }) {
+export default function LoginPage({ onLogin, students = INITIAL_STUDENTS }) {
   const [role, setRole] = useState('Admin');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -41,10 +43,29 @@ export default function LoginPage({ onLogin }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  const studentList = students.length > 0 ? students : INITIAL_STUDENTS;
+
+  const handleRoleSwitch = (newRole) => {
+    setRole(newRole);
+    setError('');
+    if (newRole === 'Student' && studentList.length > 0) {
+      setIdentifier(studentList[0].usn);
+      if (!password) setPassword('Student@123');
+    } else {
+      setIdentifier('');
+    }
+  };
+
+  const handleStudentSelect = (usn) => {
+    setIdentifier(usn);
+    if (!password) setPassword('Student@123');
+    setError('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!identifier.trim()) {
-      setError('Please enter your Email address or Student USN.');
+      setError('Please enter or select your Email address or Student USN.');
       return;
     }
     if (password.trim().length < 4) {
@@ -85,7 +106,7 @@ export default function LoginPage({ onLogin }) {
               Select Your Workspace Role
             </h1>
             <p className="mt-2 text-xs leading-relaxed text-slate-400">
-              Choose your role below and sign in with any email/USN and password to launch your workspace.
+              Choose your role below. Selecting <strong>Student Portal</strong> reveals the full 26-student quick-select directory.
             </p>
 
             <div className="mt-7 space-y-3">
@@ -96,10 +117,7 @@ export default function LoginPage({ onLogin }) {
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => {
-                      setRole(item.id);
-                      setError('');
-                    }}
+                    onClick={() => handleRoleSwitch(item.id)}
                     className={`w-full rounded-xl border p-3.5 text-left transition ${
                       active
                         ? 'border-indigo-500/60 bg-indigo-500/15 shadow-sm'
@@ -137,7 +155,9 @@ export default function LoginPage({ onLogin }) {
             </span>
             <h2 className="mt-3 text-2xl font-bold text-white">Sign in to your account</h2>
             <p className="mt-1 text-sm text-slate-400">
-              Enter any email address or USN and your chosen password
+              {role === 'Student'
+                ? 'Select a student from the dropdown below or enter any USN/email'
+                : 'Enter any email address or ID and your chosen password'}
             </p>
           </div>
 
@@ -149,9 +169,33 @@ export default function LoginPage({ onLogin }) {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Student Dropdown Wrapper (Shown when Student role is active) */}
+            {role === 'Student' && (
+              <div className="rounded-2xl border border-indigo-500/30 bg-indigo-500/10 p-3.5">
+                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-cyan-300">
+                  <Users className="h-3.5 w-3.5" />
+                  Select Enrolled Student ({studentList.length} Students)
+                </label>
+                <select
+                  value={studentList.some((s) => s.usn === identifier) ? identifier : ''}
+                  onChange={(e) => handleStudentSelect(e.target.value)}
+                  className="w-full rounded-xl border border-white/15 bg-[#0B0F19] px-3 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none"
+                >
+                  <option value="" disabled>
+                    -- Choose a Student (USN • Name • Dept • Sem) --
+                  </option>
+                  {studentList.map((stu) => (
+                    <option key={stu.usn} value={stu.usn}>
+                      {stu.usn} — {stu.full_name} ({stu.department} • Sem {stu.semester}-{stu.section})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div>
               <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-300">
-                Email Address or USN
+                {role === 'Student' ? 'Student USN or Email' : 'Email Address or Institutional ID'}
               </label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
@@ -159,7 +203,7 @@ export default function LoginPage({ onLogin }) {
                   type="text"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="Enter your email or USN..."
+                  placeholder={role === 'Student' ? 'e.g., 4GM25AI001 or student email...' : 'Enter your email or ID...'}
                   className="w-full rounded-xl border border-white/10 bg-[#0B0F19] py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none"
                 />
               </div>

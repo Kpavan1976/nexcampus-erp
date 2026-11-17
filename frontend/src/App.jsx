@@ -76,10 +76,9 @@ export default function App() {
     setUser(null);
   };
 
-  if (!user) {
-    return <LoginPage onLogin={handleLogin} />;
-  }
-
+ if (!user) {
+  return <LoginPage onLogin={handleLogin} students={students} />;
+}
   const handleRoleChange = (newRole) => {
     setRole(newRole);
     if (newRole === 'Student') setActiveTab('student-portal');
@@ -201,6 +200,7 @@ export default function App() {
                   students={students}
                   marks={marks}
                   onNotify={notify}
+                  defaultUsn={user?.usn}
                 />
               )}
             </>

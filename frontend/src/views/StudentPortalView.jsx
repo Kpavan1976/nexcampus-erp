@@ -1,8 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Download, Calculator, Award, CheckCircle2, AlertTriangle } from 'lucide-react';
 
-export default function StudentPortalView({ students, marks, onNotify }) {
-  const [selectedUsn, setSelectedUsn] = useState(students[1]?.usn || students[0]?.usn);
+export default function StudentPortalView({ students, marks, onNotify, defaultUsn }) {
+  const [selectedUsn, setSelectedUsn] = useState(defaultUsn || students[0]?.usn);
+
+  useEffect(() => {
+    if (defaultUsn && students.some((s) => s.usn === defaultUsn)) {
+      setSelectedUsn(defaultUsn);
+    } else if (!selectedUsn && students.length > 0) {
+      setSelectedUsn(students[0].usn);
+    }
+  }, [defaultUsn, students]);
+
   const student = students.find((s) => s.usn === selectedUsn) || students[0];
 
   if (!student) return null;
