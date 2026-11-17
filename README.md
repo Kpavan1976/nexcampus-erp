@@ -15,13 +15,15 @@ A full-stack Engineering Student & Academic Management System built with **React
 ## Local Setup & Run Guide
 
 ### 1. Backend (FastAPI)
-```bash
-cd backend
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
+
+    cd backend
+    pip install -r requirements.txt
+    uvicorn main:app --reload --port 8000
 
 ### 2. Frontend (React + Vite)
-```bash
-cd frontend
-npm install
-npm run dev
+
+    cd frontend
+    npm install
+    npm run dev
+
+Open **`http://localhost:5173`** in your browser to access the portal.
