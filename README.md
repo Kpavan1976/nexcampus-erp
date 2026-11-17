@@ -19,3 +19,9 @@ A full-stack Engineering Student & Academic Management System built with **React
 cd backend
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
+
+### 2. Frontend (React + Vite)
+```bash
+cd frontend
+npm install
+npm run dev
