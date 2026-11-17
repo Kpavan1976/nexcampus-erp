@@ -7,14 +7,11 @@ import {
   EyeOff,
   Shield,
   UserCheck,
-  GraduationCap,
   ArrowRight,
   AlertCircle,
-  Users,
   Volume2,
   VolumeX
 } from 'lucide-react';
-import { INITIAL_STUDENTS } from '../data/seedData';
 
 const ROLES = [
   {
@@ -28,12 +25,6 @@ const ROLES = [
     label: 'Faculty / Professor',
     icon: UserCheck,
     desc: 'Daily subject attendance register & CIE internal marks'
-  },
-  {
-    id: 'Student',
-    label: 'Student Portal',
-    icon: GraduationCap,
-    desc: 'Select any student from the list to view their SGPA & 75% calculator'
   }
 ];
 
@@ -169,7 +160,7 @@ class UISoundEngine {
   }
 }
 
-export default function LoginPage({ onLogin, students = INITIAL_STUDENTS }) {
+export default function LoginPage({ onLogin }) {
   const [role, setRole] = useState('Admin');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -188,8 +179,6 @@ export default function LoginPage({ onLogin, students = INITIAL_STUDENTS }) {
   const soundRef = useRef(new UISoundEngine());
   const mousePosRef = useRef({ x: -1000, y: -1000, active: false });
   const ctaHoverRef = useRef(false);
-
-  const studentList = students.length > 0 ? students : INITIAL_STUDENTS;
 
   const toggleMute = () => {
     const next = !soundMuted;
@@ -403,26 +392,13 @@ export default function LoginPage({ onLogin, students = INITIAL_STUDENTS }) {
     soundRef.current.playSelect();
     setRole(newRole);
     setError('');
-    if (newRole === 'Student' && studentList.length > 0) {
-      setIdentifier(studentList[0].usn);
-      if (!password) setPassword('Student@123');
-    } else {
-      setIdentifier('');
-    }
-  };
-
-  const handleStudentSelect = (usn) => {
-    soundRef.current.playSelect();
-    setIdentifier(usn);
-    if (!password) setPassword('Student@123');
-    setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!identifier.trim()) {
       soundRef.current.playError();
-      setError('Please enter or select your Email address or Student USN.');
+      setError('Please enter your Email address or Institutional ID.');
       return;
     }
     if (password.trim().length < 4) {
@@ -522,10 +498,10 @@ export default function LoginPage({ onLogin, students = INITIAL_STUDENTS }) {
                 Select Your Workspace Role
               </h1>
               <p className="mt-2 text-xs leading-relaxed text-slate-400">
-                Choose your role below. Selecting <strong className="text-amber-200">Student Portal</strong> reveals the full 26-student quick-select directory.
+                Choose your administrative or academic workspace role below to sign in to the university ERP system.
               </p>
 
-              <div className="mt-7 space-y-3">
+              <div className="mt-7 space-y-3.5">
                 {ROLES.map((item) => {
                   const Icon = item.icon;
                   const active = role === item.id;
@@ -535,7 +511,7 @@ export default function LoginPage({ onLogin, students = INITIAL_STUDENTS }) {
                       type="button"
                       onMouseEnter={() => soundRef.current.playHover()}
                       onClick={() => handleRoleSwitch(item.id)}
-                      className={`w-full rounded-2xl border p-3.5 text-left transition-all duration-200 ${
+                      className={`w-full rounded-2xl border p-4 text-left transition-all duration-200 ${
                         active
                           ? 'border-amber-400/80 bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-transparent shadow-[0_0_25px_rgba(245,158,11,0.2)]'
                           : 'border-white/10 bg-[#0B0F19]/60 hover:border-amber-400/40 hover:bg-white/[0.03]'
@@ -572,9 +548,7 @@ export default function LoginPage({ onLogin, students = INITIAL_STUDENTS }) {
               </span>
               <h2 className="mt-3 text-2xl font-bold text-white">Sign in to your account</h2>
               <p className="mt-1 text-sm text-slate-400">
-                {role === 'Student'
-                  ? 'Select a student from the dropdown below or enter any USN/email'
-                  : 'Enter any email address or ID and your chosen password'}
+                Enter your email address or institutional ID and password
               </p>
             </div>
 
@@ -586,34 +560,9 @@ export default function LoginPage({ onLogin, students = INITIAL_STUDENTS }) {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Student Dropdown Wrapper (Shown when Student role is active) */}
-              {role === 'Student' && (
-                <div className="rounded-2xl border border-amber-400/35 bg-amber-500/10 p-3.5">
-                  <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-300">
-                    <Users className="h-3.5 w-3.5" />
-                    Select Enrolled Student ({studentList.length} Students)
-                  </label>
-                  <select
-                    value={studentList.some((s) => s.usn === identifier) ? identifier : ''}
-                    onFocus={() => soundRef.current.playFocus()}
-                    onChange={(e) => handleStudentSelect(e.target.value)}
-                    className="w-full rounded-xl border border-white/15 bg-[#090D16] px-3 py-2.5 text-sm text-white focus:border-amber-400 focus:outline-none"
-                  >
-                    <option value="" disabled>
-                      -- Choose a Student (USN • Name • Dept • Sem) --
-                    </option>
-                    {studentList.map((stu) => (
-                      <option key={stu.usn} value={stu.usn}>
-                        {stu.usn} — {stu.full_name} ({stu.department} • Sem {stu.semester}-{stu.section})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
               <div>
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-300">
-                  {role === 'Student' ? 'Student USN or Email' : 'Email Address or Institutional ID'}
+                  Email Address or Institutional ID
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-3 h-4 w-4 text-amber-400/70" />
@@ -622,7 +571,7 @@ export default function LoginPage({ onLogin, students = INITIAL_STUDENTS }) {
                     value={identifier}
                     onFocus={() => soundRef.current.playFocus()}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder={role === 'Student' ? 'e.g., 4GM25AI001 or student email...' : 'Enter your email or ID...'}
+                    placeholder="Enter your email or ID..."
                     className="w-full rounded-xl border border-white/10 bg-[#090D16]/90 py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 transition focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
                   />
                 </div>
@@ -639,7 +588,7 @@ export default function LoginPage({ onLogin, students = INITIAL_STUDENTS }) {
                     value={password}
                     onFocus={() => soundRef.current.playFocus()}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter any password..."
+                    placeholder="Enter your password..."
                     className="w-full rounded-xl border border-white/10 bg-[#090D16]/90 py-2.5 pl-10 pr-11 text-sm text-white placeholder-slate-500 transition focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
                   />
                   <button

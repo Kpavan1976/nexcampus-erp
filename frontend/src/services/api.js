@@ -12,47 +12,9 @@ const KEYS = {
   FACULTY: 'nexcampus_faculty_v1',
   COURSES: 'nexcampus_courses_v1',
   MARKS: 'nexcampus_marks_v1',
-  AUTH: 'nexcampus_auth_session_v1'
+  AUTH: 'nexcampus_auth_session_v1',
+  USERS: 'nexcampus_registered_users_v1'
 };
-
-const DEMO_USERS = [
-  {
-    identifier: 'admin@nexcampus.edu.in',
-    password: 'Password@123',
-    altPassword: 'Admin@123',
-    full_name: 'Dr. Vishwanath Deshpande (Registrar)',
-    role: 'Admin',
-    department: 'Administration',
-    usn: null
-  },
-  {
-    identifier: 'r.kulkarni@nexcampus.edu.in',
-    password: 'Password@123',
-    altPassword: 'Faculty@123',
-    full_name: 'Dr. Raghavendra Kulkarni',
-    role: 'Faculty',
-    department: 'AIML',
-    usn: null
-  },
-  {
-    identifier: '4GM25AI001',
-    password: 'Password@123',
-    altPassword: 'Student@123',
-    full_name: 'Aarav Sharma',
-    role: 'Student',
-    department: 'AIML',
-    usn: '4GM25AI001'
-  },
-  {
-    identifier: '4GM25AI002',
-    password: 'Password@123',
-    altPassword: 'Student@123',
-    full_name: 'Diya Nair',
-    role: 'Student',
-    department: 'AIML',
-    usn: '4GM25AI002'
-  }
-];
 
 function readLocal(key, fallback) {
   const raw = localStorage.getItem(key);
@@ -97,32 +59,99 @@ export const erpApi = {
       throw new Error('Please enter a valid Email/USN and a password (at least 4 characters).');
     }
 
+    // 1. Try FastAPI + SQLite authentication first
     try {
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier: clean, password, role })
       });
+
       if (res.ok) {
         const session = await res.json();
+        // Mirror registered account locally for offline consistency
+        const localUsers = readLocal(KEYS.USERS, []);
+        if (!localUsers.some((u) => u.identifier.toLowerCase() === clean.toLowerCase())) {
+          writeLocal(KEYS.USERS, [
+            ...localUsers,
+            {
+              identifier: session.identifier,
+              password,
+              full_name: session.full_name,
+              role: session.role,
+              department: session.department,
+              usn: session.usn
+            }
+          ]);
+        }
         localStorage.setItem(KEYS.AUTH, JSON.stringify(session));
         return session;
       }
-    } catch {
-      // Fallback to local session creation if backend is offline
+
+      if (res.status === 401 || res.status === 400) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(
+          errData.detail ||
+            'This email/ID already exists. Incorrect password — enter the password you registered with.'
+        );
+      }
+    } catch (err) {
+      if (
+        err.message.includes('already exists') ||
+        err.message.includes('Incorrect password') ||
+        err.message.includes('at least 4')
+      ) {
+        throw err;
+      }
+      // Network error only: fall through to localStorage registry
     }
 
+    // 2. Offline / LocalStorage Register-Once, Verify-Always Registry
+    const registeredUsers = readLocal(KEYS.USERS, []);
+    const existing = registeredUsers.find(
+      (u) => u.identifier.toLowerCase() === clean.toLowerCase()
+    );
+
+    if (existing) {
+      if (existing.password !== password) {
+        throw new Error(
+          'This email/ID already exists. Incorrect password — enter the password you registered with.'
+        );
+      }
+      const session = {
+        token: 'session_' + Date.now(),
+        identifier: existing.identifier,
+        full_name: existing.full_name,
+        role: existing.role,
+        department: existing.department,
+        usn: existing.usn
+      };
+      localStorage.setItem(KEYS.AUTH, JSON.stringify(session));
+      return session;
+    }
+
+    // First-time registration in localStorage
     const displayName = clean.includes('@')
       ? clean.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
       : clean.toUpperCase();
 
-    const session = {
-      token: 'session_' + Date.now(),
+    const newAccount = {
       identifier: clean,
+      password,
       full_name: displayName,
       role,
       department: role === 'Admin' ? 'Administration' : 'AIML',
-      usn: role === 'Student' ? clean.toUpperCase() : null
+      usn: null
+    };
+    writeLocal(KEYS.USERS, [...registeredUsers, newAccount]);
+
+    const session = {
+      token: 'session_' + Date.now(),
+      identifier: newAccount.identifier,
+      full_name: newAccount.full_name,
+      role: newAccount.role,
+      department: newAccount.department,
+      usn: newAccount.usn
     };
     localStorage.setItem(KEYS.AUTH, JSON.stringify(session));
     return session;

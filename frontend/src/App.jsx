@@ -19,7 +19,6 @@ export default function App() {
   const [role, setRole] = useState(() => erpApi.getSession()?.role || 'Admin');
   const [activeTab, setActiveTab] = useState(() => {
     const initialRole = erpApi.getSession()?.role;
-    if (initialRole === 'Student') return 'student-portal';
     if (initialRole === 'Faculty') return 'faculty-workspace';
     return 'dashboard';
   });
