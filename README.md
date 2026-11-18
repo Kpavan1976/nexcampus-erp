@@ -25,5 +25,3 @@ A full-stack Engineering Student & Academic Management System built with **React
     cd frontend
     npm install
     npm run dev
-
-Open **`http://localhost:5173`** in your browser to access the portal.
