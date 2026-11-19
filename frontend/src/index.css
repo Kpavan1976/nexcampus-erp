@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 1. Deep Obsidian & Warm Gold Canvas Across All Views (Admin, Faculty, Modals) */
+/* 1. Deep Obsidian & Warm Gold Canvas Across All Views */
 @layer base {
   html,
   body,
@@ -18,7 +18,7 @@
   }
 }
 
-/* 2. Universal Glassmorphic Surfaces Across Every Page, Sidebar, Topbar & Drawer */
+/* 2. Universal Glassmorphic Surfaces, Cards & Typography */
 @layer utilities {
   aside,
   header,
@@ -37,7 +37,7 @@
     -webkit-backdrop-filter: blur(22px) saturate(140%) !important;
   }
 
-  /* Golden-Amber Glass KPI Tiles & All Dashboard Cards */
+  /* Golden-Amber Glass KPI Tiles & Dashboard Cards */
   .grid > div[class*="rounded"],
   div[class*="rounded-2xl"][class*="border"],
   div[class*="rounded-3xl"][class*="border"],
@@ -59,7 +59,7 @@
       box-shadow 260ms ease !important;
   }
 
-  /* Interactive Pop-Up Lift on Hover or Selection Across All Pages */
+  /* Interactive Pop-Up Lift on Hover */
   .grid > div[class*="rounded"]:hover,
   div[class*="rounded-2xl"][class*="border"]:hover,
   div[class*="rounded-3xl"][class*="border"]:hover,
@@ -71,7 +71,7 @@
       0 22px 48px rgba(245, 158, 11, 0.28) !important;
   }
 
-  /* Global Typography: Champagne Titles & Luminous Liquid-Gold KPI Values */
+  /* Global Typography */
   h1, h2, h3, h4,
   .text-white,
   [class*="text-slate-100"],
@@ -96,7 +96,7 @@
     color: #e2d4b7 !important;
   }
 
-  /* Convert All Blue, Cyan, Indigo, Emerald, Rose & Purple Accents to Gold */
+  /* Convert All Blue, Cyan, Indigo, Emerald, Rose & Purple Text to Gold */
   [class*="text-indigo-"],
   [class*="text-blue-"],
   [class*="text-cyan-"],
@@ -109,17 +109,16 @@
     color: #fbbf24 !important;
   }
 
-  /* Brushed Liquid-Gold Buttons, Active Navigation & Action Pills */
-  [class*="bg-indigo-600"],
-  [class*="bg-indigo-500"],
-  [class*="bg-blue-600"],
-  [class*="bg-blue-500"],
-  [class*="bg-emerald-600"],
-  [class*="bg-emerald-500"],
-  [class*="from-indigo-"],
-  [class*="from-blue-"],
-  tbody tr button,
-  table button {
+  /* Brushed Liquid-Gold Primary Buttons (Excluded from Table Name Columns) */
+  button[class*="bg-indigo-600"],
+  button[class*="bg-indigo-500"],
+  button[class*="bg-blue-600"],
+  button[class*="bg-blue-500"],
+  button[class*="bg-emerald-600"],
+  button[class*="bg-emerald-500"],
+  button[class*="from-indigo-"],
+  button[class*="from-blue-"],
+  table td:last-child button {
     background: linear-gradient(135deg, #d97706 0%, #f59e0b 52%, #fde047 100%) !important;
     color: #090d16 !important;
     font-weight: 700 !important;
@@ -127,17 +126,22 @@
     box-shadow: 0 6px 22px rgba(245, 158, 11, 0.36) !important;
   }
 
-  /* Attendance & Status Badges (Detention Risk, Active, Present) */
+  /* Dark Obsidian + Amber Glass for Status Pills & Student 360 CGPA Badge */
   [class*="bg-indigo-500/"],
   [class*="bg-blue-500/"],
   [class*="bg-cyan-500/"],
   [class*="bg-emerald-500/"],
   [class*="bg-rose-500/"],
   [class*="bg-red-500/"],
+  div[class*="from-emerald-"],
+  div[class*="from-indigo-"],
+  div[class*="from-blue-"],
+  div[class*="bg-emerald-600"],
   span[class*="rounded-full"][class*="border"] {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.28), rgba(180, 83, 9, 0.16)) !important;
-    border-color: rgba(253, 224, 71, 0.65) !important;
-    color: #fde047 !important;
+    background: linear-gradient(135deg, rgba(24, 30, 46, 0.92), rgba(180, 83, 9, 0.26)) !important;
+    border: 1px solid rgba(253, 224, 71, 0.65) !important;
+    color: #fbbf24 !important;
+    box-shadow: inset 0 1px 0 rgba(254, 243, 199, 0.18) !important;
   }
 
   /* Inputs, Search Bars & Dropdowns */
@@ -152,7 +156,33 @@
   }
 }
 
-/* 3. Unlayered High-Priority Override for ALL Recharts SVG Graphs Across Every View */
+/* 3. UNLAYERED HIGH-PRIORITY FIX: All Clickable Student/Faculty/Course Names in Tables */
+table td:not(:last-child) button,
+tbody tr td:not(:last-child) button,
+table td:not(:last-child) button span,
+tbody tr td:not(:last-child) button span {
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  color: #fef3c7 !important;
+  font-weight: 700 !important;
+  text-align: left !important;
+}
+
+table td:not(:last-child) button:hover,
+tbody tr td:not(:last-child) button:hover,
+table td:not(:last-child) button:hover span {
+  background: transparent !important;
+  background-image: none !important;
+  color: #fbbf24 !important;
+  text-decoration: underline !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* 4. Unlayered Override for ALL Recharts SVG Graphs */
 .recharts-wrapper svg path[fill],
 .recharts-wrapper svg rect[fill] {
   fill: #f59e0b !important;
@@ -190,4 +220,52 @@
 
 .recharts-legend-item-text {
   color: #fde68a !important;
+}
+
+/* 5. 3D Interactive Login Frame Tilt & Golden Cursor Spotlight */
+.login-tilt-frame {
+  transform-style: preserve-3d;
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 250ms ease, border-color 250ms ease !important;
+  will-change: transform;
+}
+
+.login-tilt-frame:hover {
+  border-color: rgba(253, 224, 71, 0.85) !important;
+  box-shadow: 0 28px 65px rgba(0, 0, 0, 0.65), 0 0 36px rgba(245, 158, 11, 0.25) !important;
+}
+
+.login-tilt-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: radial-gradient(
+    420px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(253, 224, 71, 0.16),
+    transparent 65%
+  );
+  opacity: 0;
+  transition: opacity 250ms ease;
+  z-index: 1;
+}
+
+.login-tilt-frame:hover::before {
+  opacity: 1;
+}
+
+/* 6. Custom Gold Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #080b14;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(245, 158, 11, 0.42);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(253, 224, 71, 0.8);
 }
