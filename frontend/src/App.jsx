@@ -1,3 +1,4 @@
+import AmbientGoldCanvas from './components/AmbientGoldCanvas';
 import React, { useState, useEffect } from 'react';
 import { erpApi } from './services/api';
 import LoginPage from './components/LoginPage';
@@ -64,9 +65,8 @@ export default function App() {
     const session = await erpApi.login(identifier, password, selectedRole);
     setUser(session);
     setRole(session.role);
-    if (session.role === 'Student') setActiveTab('student-portal');
-    else if (session.role === 'Faculty') setActiveTab('faculty-workspace');
-    else setActiveTab('dashboard');
+    if (session.role === 'Faculty') setActiveTab('faculty-workspace');
+else setActiveTab('dashboard');
     notify(`Welcome, ${session.full_name}`);
   };
 
@@ -80,8 +80,7 @@ export default function App() {
 }
   const handleRoleChange = (newRole) => {
     setRole(newRole);
-    if (newRole === 'Student') setActiveTab('student-portal');
-    else if (newRole === 'Faculty') setActiveTab('faculty-workspace');
+    if (newRole === 'Faculty') setActiveTab('faculty-workspace');
     else setActiveTab('dashboard');
     notify(`Switched workspace to ${newRole} Mode`);
   };
@@ -126,6 +125,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#0B0F19] text-slate-100">
+      <AmbientGoldCanvas />
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}

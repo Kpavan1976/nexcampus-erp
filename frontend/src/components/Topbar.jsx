@@ -13,10 +13,9 @@ export default function Topbar({
   const [notifOpen, setNotifOpen] = useState(false);
 
   const roles = [
-    { id: 'Admin', icon: Shield },
-    { id: 'Faculty', icon: UserCheck },
-    { id: 'Student', icon: GraduationCap }
-  ];
+  { id: 'Admin', icon: Shield },
+  { id: 'Faculty', icon: UserCheck },
+];
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-white/[0.08] bg-[#0B0F19]/85 px-4 lg:px-8 backdrop-blur-xl">

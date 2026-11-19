@@ -11,11 +11,11 @@ import {
 } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { id: 'dashboard', label: 'Executive Dashboard', icon: LayoutDashboard, roles: ['Admin', 'Faculty', 'Student'] },
+  { id: 'dashboard', label: 'Executive Dashboard', icon: LayoutDashboard, roles: ['Admin', 'Faculty'] },
   { id: 'students', label: 'Student Directory', icon: Users, roles: ['Admin', 'Faculty'] },
   { id: 'faculty-workspace', label: 'Attendance & Marks', icon: ClipboardCheck, roles: ['Admin', 'Faculty'] },
-  { id: 'courses', label: 'Courses & Faculty', icon: BookOpen, roles: ['Admin', 'Faculty', 'Student'] },
-  { id: 'student-portal', label: 'Student 360° Portal', icon: GraduationCap, roles: ['Admin', 'Student'] }
+  { id: 'courses', label: 'Courses & Faculty', icon: BookOpen, roles: ['Admin', 'Faculty'] },
+  { id: 'student-portal', label: 'Student 360° Portal', icon: GraduationCap, roles: ['Admin'] }
 ];
 
 export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, role, backendOnline }) {
