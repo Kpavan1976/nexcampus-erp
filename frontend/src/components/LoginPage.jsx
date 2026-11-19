@@ -1,625 +1,558 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Cpu,
-  Lock,
+  ShieldCheck,
+  GraduationCap,
   Mail,
+  Lock,
   Eye,
   EyeOff,
-  Shield,
-  UserCheck,
   ArrowRight,
   AlertCircle,
+  Sparkles,
   Volume2,
-  VolumeX
+  VolumeX,
 } from 'lucide-react';
+import { erpApi } from '../services/api';
 
 const ROLES = [
   {
     id: 'Admin',
-    label: 'Admin / Registrar',
-    icon: Shield,
-    desc: 'Full ERP control, fee ledger, student admissions & analytics'
+    title: 'Admin / Registrar',
+    subtitle: 'Full ERP control, fee ledger, student admissions & analytics',
+    icon: ShieldCheck,
+    badge: 'Admin Login',
+    cta: 'Continue as Admin',
   },
   {
     id: 'Faculty',
-    label: 'Faculty / Professor',
-    icon: UserCheck,
-    desc: 'Daily subject attendance register & CIE internal marks'
-  }
+    title: 'Faculty / Professor',
+    subtitle: 'Daily subject attendance register & CIE internal marks',
+    icon: GraduationCap,
+    badge: 'Faculty Login',
+    cta: 'Continue as Faculty',
+  },
 ];
 
-// Zero-dependency Web Audio API synthesizer for tactile glass UI sounds
-class UISoundEngine {
-  constructor() {
-    this.ctx = null;
-    this.muted = false;
-  }
+const LAMP_THEMES = {
+  gold: {
+    name: 'Liquid Gold',
+    dot: '#fbbf24',
+    bulb: '#fef08a',
+    glow: 'rgba(251, 191, 36, 0.34)',
+    coneTop: 'rgba(253, 224, 71, 0.36)',
+    coneMid: 'rgba(245, 158, 11, 0.14)',
+    border: 'rgba(251, 191, 36, 0.65)',
+    accentText: '#fde047',
+    buttonGradient: 'linear-gradient(135deg, #d97706 0%, #f59e0b 52%, #fde047 100%)',
+    buttonText: '#090d16',
+  },
+  emerald: {
+    name: 'Emerald',
+    dot: '#10b981',
+    bulb: '#a7f3d0',
+    glow: 'rgba(16, 185, 129, 0.32)',
+    coneTop: 'rgba(52, 211, 153, 0.34)',
+    coneMid: 'rgba(16, 185, 129, 0.12)',
+    border: 'rgba(52, 211, 153, 0.6)',
+    accentText: '#6ee7b7',
+    buttonGradient: 'linear-gradient(135deg, #059669 0%, #10b981 52%, #6ee7b7 100%)',
+    buttonText: '#052e16',
+  },
+  crimson: {
+    name: 'Crimson',
+    dot: '#f43f5e',
+    bulb: '#fecdd3',
+    glow: 'rgba(244, 63, 94, 0.32)',
+    coneTop: 'rgba(251, 113, 133, 0.34)',
+    coneMid: 'rgba(244, 63, 94, 0.12)',
+    border: 'rgba(251, 113, 133, 0.6)',
+    accentText: '#fda4af',
+    buttonGradient: 'linear-gradient(135deg, #e11d48 0%, #f43f5e 52%, #fda4af 100%)',
+    buttonText: '#ffffff',
+  },
+  cyan: {
+    name: 'Cyan',
+    dot: '#22d3ee',
+    bulb: '#cffafe',
+    glow: 'rgba(34, 211, 238, 0.32)',
+    coneTop: 'rgba(103, 232, 249, 0.34)',
+    coneMid: 'rgba(34, 211, 238, 0.12)',
+    border: 'rgba(103, 232, 249, 0.6)',
+    accentText: '#67e8f9',
+    buttonGradient: 'linear-gradient(135deg, #0284c7 0%, #06b6d4 52%, #67e8f9 100%)',
+    buttonText: '#082f49',
+  },
+};
 
-  init() {
-    if (!this.ctx && typeof window !== 'undefined') {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (AudioCtx) {
-        this.ctx = new AudioCtx();
-      }
-    }
-    if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume().catch(() => {});
-    }
-  }
+export default function LoginPage({ onLogin, onLoginSuccess, error: externalError }) {
+  const [lampOn, setLampOn] = useState(false);
+  const [pulling, setPulling] = useState(false);
+  const [themeKey, setThemeKey] = useState('gold');
+  const [soundEnabled, setSoundEnabled] = useState(true);
 
-  playHover() {
-    if (this.muted) return;
-    this.init();
-    if (!this.ctx) return;
-
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(920, now);
-    osc.frequency.exponentialRampToValueAtTime(1380, now + 0.035);
-
-    gain.gain.setValueAtTime(0.025, now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.035);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.04);
-  }
-
-  playSelect() {
-    if (this.muted) return;
-    this.init();
-    if (!this.ctx) return;
-
-    const now = this.ctx.currentTime;
-    [523.25, 783.99].forEach((freq, idx) => {
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freq, now + idx * 0.025);
-      osc.frequency.exponentialRampToValueAtTime(freq * 1.15, now + 0.11);
-
-      gain.gain.setValueAtTime(0.055, now + idx * 0.025);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
-
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-      osc.start(now + idx * 0.025);
-      osc.stop(now + 0.13);
-    });
-  }
-
-  playFocus() {
-    if (this.muted) return;
-    this.init();
-    if (!this.ctx) return;
-
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(340, now);
-    osc.frequency.exponentialRampToValueAtTime(220, now + 0.028);
-
-    gain.gain.setValueAtTime(0.035, now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.035);
-  }
-
-  playSuccess() {
-    if (this.muted) return;
-    this.init();
-    if (!this.ctx) return;
-
-    const now = this.ctx.currentTime;
-    const notes = [523.25, 659.25, 783.99, 1046.5];
-    notes.forEach((freq, i) => {
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.type = 'sine';
-      const start = now + i * 0.055;
-      osc.frequency.setValueAtTime(freq, start);
-
-      gain.gain.setValueAtTime(0.065, start);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.28);
-
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-      osc.start(start);
-      osc.stop(start + 0.3);
-    });
-  }
-
-  playError() {
-    if (this.muted) return;
-    this.init();
-    if (!this.ctx) return;
-
-    const now = this.ctx.currentTime;
-    [190, 145].forEach((freq, i) => {
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      osc.type = 'sawtooth';
-      const start = now + i * 0.08;
-      osc.frequency.setValueAtTime(freq, start);
-
-      gain.gain.setValueAtTime(0.04, start);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.09);
-
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-      osc.start(start);
-      osc.stop(start + 0.1);
-    });
-  }
-}
-
-export default function LoginPage({ onLogin }) {
   const [role, setRole] = useState('Admin');
-  const [identifier, setIdentifier] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [localError, setLocalError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
-  const [soundMuted, setSoundMuted] = useState(false);
 
-  // 3D Tilt & Cursor Spotlight State
-  const [tilt, setTilt] = useState({ rotateX: 0, rotateY: 0 });
-  const [spotlight, setSpotlight] = useState({ x: 350, y: 250, opacity: 0 });
-  const [hudCoords, setHudCoords] = useState({ x: '+65,38', y: '-23,38' });
+  // Persistent Shared Web Audio Context (Unlocked on User Gesture)
+  const audioCtxRef = useRef(null);
 
-  const cardRef = useRef(null);
-  const canvasRef = useRef(null);
-  const soundRef = useRef(new UISoundEngine());
-  const mousePosRef = useRef({ x: -1000, y: -1000, active: false });
-  const ctaHoverRef = useRef(false);
+  const playTone = async (type = 'switch', turningOn = true) => {
+    if (!soundEnabled) return;
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new AudioCtx();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') {
+        await ctx.resume();
+      }
 
-  const toggleMute = () => {
-    const next = !soundMuted;
-    setSoundMuted(next);
-    soundRef.current.muted = next;
-    if (!next) {
-      soundRef.current.playSelect();
-    }
-  };
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
 
-  // Interactive HTML5 Canvas: Liquid-Gold Orbs + Wireframe Terrain + Luminous Comet Trail
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let animationFrameId;
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
-
-    const handleResize = () => {
-      if (!canvas) return;
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
-    };
-    window.addEventListener('resize', handleResize);
-
-    const trail = [];
-    const sparkles = [];
-    const orbs = [
-      { rx: 0.84, ry: 0.24, r: 92, speed: 0.0012, phase: 0, parallax: -0.025 },
-      { rx: 0.68, ry: 0.11, r: 22, speed: 0.0018, phase: 1.4, parallax: -0.04 },
-      { rx: 0.14, ry: 0.78, r: 68, speed: 0.0014, phase: 2.6, parallax: 0.03 },
-      { rx: 0.08, ry: 0.56, r: 14, speed: 0.0021, phase: 4.1, parallax: 0.045 },
-      { rx: 0.91, ry: 0.82, r: 44, speed: 0.0015, phase: 5.0, parallax: -0.02 }
-    ];
-
-    const spawnSparkles = (x, y, count = 2, burst = false) => {
-      for (let i = 0; i < count; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = burst ? 1.2 + Math.random() * 3.2 : 0.25 + Math.random() * 1.1;
-        sparkles.push({
-          x: x + (Math.random() - 0.5) * 14,
-          y: y + (Math.random() - 0.5) * 14,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed - 0.2,
-          size: burst ? 1.8 + Math.random() * 2.4 : 1 + Math.random() * 1.8,
-          life: 1,
-          decay: burst ? 0.022 + Math.random() * 0.015 : 0.028 + Math.random() * 0.02
+      if (type === 'switch') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(turningOn ? 520 : 380, now);
+        osc.frequency.exponentialRampToValueAtTime(turningOn ? 1180 : 190, now + 0.08);
+        gain.gain.setValueAtTime(0.14, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.095);
+      } else if (type === 'chime') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(660, now);
+        osc.frequency.exponentialRampToValueAtTime(990, now + 0.14);
+        gain.gain.setValueAtTime(0.11, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.17);
+      } else if (type === 'login') {
+        // Ascending Golden Chord
+        [523.25, 659.25, 783.99].forEach((freq, idx) => {
+          const noteOsc = ctx.createOscillator();
+          const noteGain = ctx.createGain();
+          noteOsc.type = 'sine';
+          noteOsc.frequency.setValueAtTime(freq, now + idx * 0.055);
+          noteGain.gain.setValueAtTime(0.09, now + idx * 0.055);
+          noteGain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.055 + 0.25);
+          noteOsc.connect(noteGain);
+          noteGain.connect(ctx.destination);
+          noteOsc.start(now + idx * 0.055);
+          noteOsc.stop(now + idx * 0.055 + 0.26);
         });
       }
-    };
+    } catch (_) {}
+  };
 
-    const handleGlobalMove = (e) => {
-      mousePosRef.current = { x: e.clientX, y: e.clientY, active: true };
-      trail.push({ x: e.clientX, y: e.clientY, life: 1 });
-      if (trail.length > 28) trail.shift();
-      spawnSparkles(e.clientX, e.clientY, ctaHoverRef.current ? 4 : 2, ctaHoverRef.current);
-    };
+  // 3D Magnetic Tilt & Cursor Spotlight
+  const cardRef = useRef(null);
+  const [tiltStyle, setTiltStyle] = useState({
+    transform: 'perspective(1200px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)',
+    '--mouse-x': '50%',
+    '--mouse-y': '50%',
+  });
 
-    const handleGlobalClick = (e) => {
-      soundRef.current.init();
-      spawnSparkles(e.clientX, e.clientY, 16, true);
-    };
+  const theme = LAMP_THEMES[themeKey];
+  const activeRole = ROLES.find((r) => r.id === role) || ROLES[0];
+  const displayError = externalError || localError;
 
-    window.addEventListener('pointermove', handleGlobalMove);
-    window.addEventListener('pointerdown', handleGlobalClick);
-
-    const drawWireframeWave = (time, originX, originY, mirrorX, mirrorY) => {
-      ctx.save();
-      ctx.strokeStyle = 'rgba(245, 158, 11, 0.12)';
-      ctx.lineWidth = 1;
-      const rows = 14;
-      const cols = 20;
-      const spacingX = 24;
-      const spacingY = 16;
-
-      for (let r = 0; r < rows; r++) {
-        ctx.beginPath();
-        for (let c = 0; c < cols; c++) {
-          const wave =
-            Math.sin(c * 0.35 + time * 0.0015 + r * 0.4) * 16 +
-            Math.cos(r * 0.45 - time * 0.0012) * 10;
-          const px = originX + mirrorX * (c * spacingX - r * 8);
-          const py = originY + mirrorY * (r * spacingY + wave);
-          if (c === 0) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        }
-        ctx.stroke();
-      }
-      ctx.restore();
-    };
-
-    const render = (time) => {
-      ctx.clearRect(0, 0, width, height);
-
-      const offsetX = mousePosRef.current.active ? mousePosRef.current.x - width / 2 : 0;
-      const offsetY = mousePosRef.current.active ? mousePosRef.current.y - height / 2 : 0;
-
-      // 1. Subtle Top-Right & Bottom-Left Wireframe Terrain Meshes
-      drawWireframeWave(time, width - 30 - offsetX * 0.015, 220 - offsetY * 0.015, -1, 1);
-      drawWireframeWave(time, 30 - offsetX * 0.015, height - 40 - offsetY * 0.015, 1, -1);
-
-      // 2. Floating Liquid-Gold / Amber Orbs with Depth Parallax
-      orbs.forEach((orb) => {
-        const floatY = Math.sin(time * orb.speed + orb.phase) * 14;
-        const floatX = Math.cos(time * orb.speed * 0.8 + orb.phase) * 10;
-        const cx = width * orb.rx + floatX + offsetX * orb.parallax;
-        const cy = height * orb.ry + floatY + offsetY * orb.parallax;
-
-        const grad = ctx.createRadialGradient(
-          cx - orb.r * 0.3,
-          cy - orb.r * 0.3,
-          orb.r * 0.08,
-          cx,
-          cy,
-          orb.r
-        );
-        grad.addColorStop(0, 'rgba(254, 240, 138, 0.85)');
-        grad.addColorStop(0.35, 'rgba(245, 158, 11, 0.55)');
-        grad.addColorStop(0.75, 'rgba(180, 83, 9, 0.22)');
-        grad.addColorStop(1, 'rgba(180, 83, 9, 0)');
-
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(cx, cy, orb.r, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      // 3. Luminous Comet Ribbon Trail
-      if (trail.length > 1) {
-        for (let i = 1; i < trail.length; i++) {
-          const p0 = trail[i - 1];
-          const p1 = trail[i];
-          const ratio = i / trail.length;
-          ctx.beginPath();
-          ctx.moveTo(p0.x, p0.y);
-          ctx.lineTo(p1.x, p1.y);
-          ctx.strokeStyle = `rgba(253, 224, 71, ${ratio * p1.life * 0.65})`;
-          ctx.lineWidth = ratio * 5;
-          ctx.lineCap = 'round';
-          ctx.shadowColor = 'rgba(245, 158, 11, 0.9)';
-          ctx.shadowBlur = 14;
-          ctx.stroke();
-        }
-        ctx.shadowBlur = 0;
-      }
-
-      for (let i = trail.length - 1; i >= 0; i--) {
-        trail[i].life -= 0.035;
-        if (trail[i].life <= 0) trail.splice(i, 1);
-      }
-
-      // 4. Twinkling Golden Starburst Sparkles
-      for (let i = sparkles.length - 1; i >= 0; i--) {
-        const sp = sparkles[i];
-        sp.x += sp.vx;
-        sp.y += sp.vy;
-        sp.life -= sp.decay;
-        if (sp.life <= 0) {
-          sparkles.splice(i, 1);
-          continue;
-        }
-        ctx.save();
-        ctx.fillStyle = `rgba(254, 249, 195, ${sp.life})`;
-        ctx.shadowColor = 'rgba(251, 191, 36, 0.95)';
-        ctx.shadowBlur = 10;
-        ctx.beginPath();
-        ctx.arc(sp.x, sp.y, sp.size * sp.life, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
-
-      animationFrameId = requestAnimationFrame(render);
-    };
-
-    animationFrameId = requestAnimationFrame(render);
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('pointermove', handleGlobalMove);
-      window.removeEventListener('pointerdown', handleGlobalClick);
-    };
-  }, []);
+  const handlePullCord = () => {
+    const nextState = !lampOn;
+    setPulling(true);
+    setLampOn(nextState);
+    playTone('switch', nextState);
+    setTimeout(() => setPulling(false), 260);
+  };
 
   const handleCardMouseMove = (e) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
+    if (!lampOn) return;
+    const el = cardRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
+    const rotateX = ((y - rect.height / 2) / (rect.height / 2)) * -5;
+    const rotateY = ((x - rect.width / 2) / (rect.width / 2)) * 5;
 
-    const rotateX = ((y - centerY) / centerY) * -5;
-    const rotateY = ((x - centerX) / centerX) * 5;
-
-    setTilt({ rotateX, rotateY });
-    setSpotlight({ x, y, opacity: 1 });
-    setHudCoords({
-      x: `${x - centerX >= 0 ? '+' : ''}${Math.round((x - centerX) / 6)},${Math.round(y / 12)}`,
-      y: `${y - centerY >= 0 ? '+' : ''}${Math.round((y - centerY) / 6)},${Math.round(x / 18)}`
+    setTiltStyle({
+      transform: `perspective(1200px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(1.01, 1.01, 1.01)`,
+      '--mouse-x': `${x}px`,
+      '--mouse-y': `${y}px`,
     });
   };
 
   const handleCardMouseLeave = () => {
-    setTilt({ rotateX: 0, rotateY: 0 });
-    setSpotlight((prev) => ({ ...prev, opacity: 0 }));
-  };
-
-  const handleRoleSwitch = (newRole) => {
-    soundRef.current.playSelect();
-    setRole(newRole);
-    setError('');
+    setTiltStyle({
+      transform: 'perspective(1200px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)',
+      '--mouse-x': '50%',
+      '--mouse-y': '50%',
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!identifier.trim()) {
-      soundRef.current.playError();
-      setError('Please enter your Email address or Institutional ID.');
+    setLocalError('');
+    const trimmedEmail = String(email || '').trim();
+    const trimmedPassword = String(password || '').trim();
+
+    if (!trimmedEmail || !trimmedPassword) {
+      setLocalError('Please enter your institutional email/ID and password.');
       return;
     }
-    if (password.trim().length < 4) {
-      soundRef.current.playError();
-      setError('Please enter a password (minimum 4 characters).');
-      return;
-    }
-    setSubmitting(true);
-    setError('');
+
     try {
-      soundRef.current.playSuccess();
-      await onLogin(identifier, password, role);
+      setSubmitting(true);
+      playTone('login', true);
+
+      if (typeof onLogin === 'function') {
+        // Pass positional string arguments (identifier, password, role) expected by App.jsx
+        await onLogin(trimmedEmail, trimmedPassword, role);
+      } else if (erpApi?.login) {
+        const session = await erpApi.login(trimmedEmail, trimmedPassword, role);
+        onLoginSuccess?.(session);
+      } else {
+        onLoginSuccess?.({ role, email: trimmedEmail, name: `${role} User` });
+      }
     } catch (err) {
-      soundRef.current.playError();
-      setError(err.message || 'Unable to sign in. Please try again.');
+      setLocalError(err?.message || 'Invalid credentials. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-[#070A12] via-[#0B101D] to-[#0E1526] px-4 py-12 text-slate-100">
-      {/* Ambient Radial Glows */}
-      <div className="pointer-events-none absolute -left-36 -top-36 h-[28rem] w-[28rem] rounded-full bg-amber-500/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-36 -right-36 h-[28rem] w-[28rem] rounded-full bg-amber-400/10 blur-3xl" />
+    <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-[#060911] px-4 py-8">
+      {/* Top-Right Controls: Sound Toggle + Theme Swatch Dots */}
+      <div className="fixed right-6 top-6 z-40 flex items-center gap-3 rounded-full border border-white/15 bg-[#111726]/85 px-4 py-2 backdrop-blur-xl">
+        <button
+          type="button"
+          onClick={() => {
+            const next = !soundEnabled;
+            setSoundEnabled(next);
+            if (next) {
+              setTimeout(() => playTone('chime', true), 20);
+            }
+          }}
+          title={soundEnabled ? 'Mute Portal Sound FX' : 'Enable Portal Sound FX'}
+          className="flex items-center gap-1.5 border-r border-white/15 pr-3 text-xs font-semibold text-amber-200 transition hover:text-amber-300"
+        >
+          {soundEnabled ? (
+            <>
+              <Volume2 className="h-3.5 w-3.5 text-amber-400" />
+              <span>Sound On</span>
+            </>
+          ) : (
+            <>
+              <VolumeX className="h-3.5 w-3.5 text-slate-400" />
+              <span className="text-slate-400">Muted</span>
+            </>
+          )}
+        </button>
 
-      {/* Full-Screen Interactive Particle & Liquid-Gold Canvas */}
-      <canvas
-        ref={canvasRef}
-        className="pointer-events-none fixed inset-0 z-10 h-full w-full"
-      />
+        <div className="flex items-center gap-2">
+          {Object.entries(LAMP_THEMES).map(([key, item]) => (
+            <button
+              key={key}
+              type="button"
+              title={`Switch Lamp Glow: ${item.name}`}
+              onClick={() => {
+                setThemeKey(key);
+                if (!lampOn) setLampOn(true);
+                playTone('chime', true);
+              }}
+              style={{
+                backgroundColor: item.dot,
+                boxShadow: themeKey === key ? `0 0 14px ${item.dot}` : 'none',
+              }}
+              className={`h-3.5 w-3.5 rounded-full transition-transform duration-200 hover:scale-125 ${
+                themeKey === key ? 'scale-125 ring-2 ring-white' : 'opacity-70'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
 
-      {/* Sound Toggle Pill */}
-      <button
-        type="button"
-        onClick={toggleMute}
-        onMouseEnter={() => soundRef.current.playHover()}
-        className="fixed right-5 top-5 z-30 flex items-center gap-2 rounded-full border border-amber-400/30 bg-[#111726]/80 px-3.5 py-1.5 text-xs font-medium text-amber-200 backdrop-blur-xl transition hover:border-amber-400/70 hover:bg-amber-500/15"
-      >
-        {soundMuted ? (
-          <>
-            <VolumeX className="h-3.5 w-3.5 text-slate-400" />
-            <span>UI Sound Off</span>
-          </>
-        ) : (
-          <>
-            <Volume2 className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
-            <span>UI Sound On</span>
-          </>
-        )}
-      </button>
+      {/* Main Split Stage: Interactive Pull-Cord Lamp + NexCampus Login Card */}
+      <div className="relative z-20 flex w-full max-w-6xl flex-col items-center justify-center gap-8 lg:flex-row lg:items-center lg:justify-between">
+        {/* Interactive Desk Lamp Assembly */}
+        <div className="relative flex flex-col items-center select-none lg:w-1/3">
+          {/* Illuminated Light Cone */}
+          <div
+            style={{
+              background: `radial-gradient(ellipse at 50% 0%, ${theme.coneTop} 0%, ${theme.coneMid} 48%, transparent 78%)`,
+            }}
+            className={`pointer-events-none absolute top-28 h-[440px] w-[520px] transition-opacity duration-500 ${
+              lampOn ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
 
-      {/* 3D Perspective Glassmorphic Card */}
-      <div
-        style={{ perspective: '1300px' }}
-        className="relative z-20 w-full max-w-5xl"
-      >
+          <div className="relative flex flex-col items-center">
+            {/* Lamp Shade */}
+            <div
+              onClick={handlePullCord}
+              title="Pull cord or click lamp to toggle light"
+              style={{
+                boxShadow: lampOn ? `0 18px 55px ${theme.glow}` : 'none',
+                borderColor: lampOn ? theme.border : 'rgba(255,255,255,0.12)',
+              }}
+              className="relative z-20 h-28 w-44 cursor-pointer rounded-t-[72px] rounded-b-2xl border bg-gradient-to-b from-[#232b3e] to-[#111625] transition-all duration-300"
+            >
+              {/* Glowing Bulb Rim */}
+              <div
+                style={{
+                  backgroundColor: lampOn ? theme.bulb : '#1e293b',
+                  boxShadow: lampOn ? `0 0 32px 10px ${theme.dot}` : 'none',
+                }}
+                className="absolute -bottom-2.5 left-1/2 h-5 w-16 -translate-x-1/2 rounded-full transition-all duration-300"
+              />
+            </div>
+
+            {/* Center Stand & Dangling Pull Cord */}
+            <div className="relative flex items-start justify-center">
+              <div className="h-44 w-2.5 bg-gradient-to-b from-slate-600 via-slate-700 to-slate-800" />
+              <button
+                type="button"
+                onClick={handlePullCord}
+                aria-label="Pull lamp cord"
+                className="group absolute left-6 top-0 flex flex-col items-center focus:outline-none"
+              >
+                <div
+                  style={{
+                    height: pulling ? '118px' : lampOn ? '96px' : '84px',
+                  }}
+                  className="w-[2px] bg-gradient-to-b from-amber-200/80 to-amber-400 transition-all duration-200"
+                />
+                <div
+                  style={{
+                    backgroundColor: lampOn ? theme.dot : '#94a3b8',
+                    boxShadow: lampOn ? `0 0 16px ${theme.dot}` : 'none',
+                  }}
+                  className="h-5 w-3 rounded-full border border-white/40 transition-transform duration-200 group-hover:scale-125 group-active:translate-y-2"
+                />
+              </button>
+            </div>
+
+            {/* Lamp Base */}
+            <div className="h-3.5 w-32 rounded-full border border-white/10 bg-gradient-to-r from-slate-800 via-slate-600 to-slate-800 shadow-xl" />
+
+            {/* Prompt Hint */}
+            <button
+              type="button"
+              onClick={handlePullCord}
+              className={`mt-5 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-semibold transition-all duration-300 ${
+                lampOn
+                  ? 'border-white/15 bg-white/5 text-slate-300 hover:bg-white/10'
+                  : 'animate-bounce border-amber-400/50 bg-amber-500/15 text-amber-200 shadow-[0_0_24px_rgba(245,158,11,0.3)]'
+              }`}
+            >
+              <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+              <span>{lampOn ? 'Pull cord to dim lamp' : 'Pull the cord to illuminate portal'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Illuminated 3D Glass NexCampus Login Frame */}
         <div
           ref={cardRef}
           onMouseMove={handleCardMouseMove}
           onMouseLeave={handleCardMouseLeave}
           style={{
-            transform: `rotateX(${tilt.rotateX}deg) rotateY(${tilt.rotateY}deg)`,
-            transition: spotlight.opacity ? 'transform 120ms ease-out' : 'transform 500ms cubic-bezier(0.22, 1, 0.36, 1)'
+            ...tiltStyle,
+            borderColor: lampOn ? theme.border : 'rgba(255,255,255,0.06)',
+            boxShadow: lampOn
+              ? `0 28px 70px rgba(0,0,0,0.75), 0 0 45px ${theme.glow}`
+              : 'none',
           }}
-          className="relative grid w-full grid-cols-1 overflow-hidden rounded-3xl border border-amber-400/25 bg-[#111726]/80 shadow-[0_25px_90px_rgba(0,0,0,0.8)] backdrop-blur-2xl lg:grid-cols-12"
+          className={`login-tilt-frame relative w-full max-w-3xl overflow-hidden rounded-3xl border bg-[#111726]/85 backdrop-blur-2xl transition-all duration-500 lg:w-2/3 ${
+            lampOn
+              ? 'pointer-events-auto translate-y-0 scale-100 opacity-100'
+              : 'pointer-events-none translate-y-4 scale-95 opacity-0'
+          }`}
         >
-          {/* Cursor-Tracking Spotlight Overlay */}
-          <div
-            className="pointer-events-none absolute inset-0 z-0 transition-opacity duration-300"
-            style={{
-              opacity: spotlight.opacity,
-              background: `radial-gradient(560px circle at ${spotlight.x}px ${spotlight.y}px, rgba(251, 191, 36, 0.14), transparent 45%)`
-            }}
-          />
-
-          {/* Subtle Technical HUD Coordinate Readouts */}
-          <div className="pointer-events-none absolute right-4 top-1/2 z-10 hidden -translate-y-1/2 flex-col items-end gap-16 font-mono text-[10px] text-amber-300/35 sm:flex">
-            <span>{hudCoords.x}</span>
-            <span>{hudCoords.y}</span>
-          </div>
-
-          {/* Left Role Selection Panel (5 Columns) */}
-          <div className="relative z-10 flex flex-col justify-between border-b border-white/10 bg-gradient-to-br from-amber-500/[0.08] via-[#111726]/60 to-transparent p-8 lg:col-span-5 lg:border-b-0 lg:border-r">
-            <div>
-              <div className="flex items-center gap-3.5">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-300/40 bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 shadow-[0_0_25px_rgba(245,158,11,0.45)]">
-                  <Cpu className="h-6 w-6 text-slate-950" />
-                </div>
-                <div>
-                  <div className="text-lg font-bold tracking-wide text-white">NexCampus ERP</div>
-                  <div className="text-xs font-medium text-amber-300/80">Engineering University Portal</div>
-                </div>
-              </div>
-
-              <h1 className="mt-8 text-2xl font-extrabold leading-snug text-white">
-                Select Your Workspace Role
-              </h1>
-              <p className="mt-2 text-xs leading-relaxed text-slate-400">
-                Choose your administrative or academic workspace role below to sign in to the university ERP system.
-              </p>
-
-              <div className="mt-7 space-y-3.5">
-                {ROLES.map((item) => {
-                  const Icon = item.icon;
-                  const active = role === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onMouseEnter={() => soundRef.current.playHover()}
-                      onClick={() => handleRoleSwitch(item.id)}
-                      className={`w-full rounded-2xl border p-4 text-left transition-all duration-200 ${
-                        active
-                          ? 'border-amber-400/80 bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-transparent shadow-[0_0_25px_rgba(245,158,11,0.2)]'
-                          : 'border-white/10 bg-[#0B0F19]/60 hover:border-amber-400/40 hover:bg-white/[0.03]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-2.5 text-xs font-bold text-white">
-                          <Icon className={`h-4 w-4 ${active ? 'text-amber-400' : 'text-slate-400'}`} />
-                          {item.label}
-                        </span>
-                        {active && (
-                          <span className="rounded-md border border-amber-400/40 bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
-                            Selected
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-1.5 text-[11px] text-slate-400">{item.desc}</p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="mt-8 border-t border-white/10 pt-4 text-[11px] text-slate-500">
-              NexCampus Authentication Gateway • AY 2026–27
-            </div>
-          </div>
-
-          {/* Right Sign-In Form (7 Columns) */}
-          <div className="relative z-10 flex flex-col justify-center p-8 sm:p-12 lg:col-span-7">
-            <div className="mb-6">
-              <span className="inline-block rounded-full border border-amber-400/40 bg-amber-500/15 px-3.5 py-1 text-xs font-semibold text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
-                {role} Login
-              </span>
-              <h2 className="mt-3 text-2xl font-bold text-white">Sign in to your account</h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Enter your email address or institutional ID and password
-              </p>
-            </div>
-
-            {error && (
-              <div className="mb-5 flex items-center gap-2.5 rounded-xl border border-rose-500/40 bg-rose-500/15 px-4 py-3 text-xs font-medium text-rose-200">
-                <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="grid md:grid-cols-12">
+            {/* Left Role Selector */}
+            <div className="flex flex-col justify-between border-b border-white/10 bg-[#0d121f]/90 p-7 md:col-span-5 md:border-b-0 md:border-r">
               <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-300">
-                  Email Address or Institutional ID
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-3 h-4 w-4 text-amber-400/70" />
-                  <input
-                    type="text"
-                    value={identifier}
-                    onFocus={() => soundRef.current.playFocus()}
-                    onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder="Enter your email or ID..."
-                    className="w-full rounded-xl border border-white/10 bg-[#090D16]/90 py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 transition focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-300">
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-3 h-4 w-4 text-amber-400/70" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onFocus={() => soundRef.current.playFocus()}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password..."
-                    className="w-full rounded-xl border border-white/10 bg-[#090D16]/90 py-2.5 pl-10 pr-11 text-sm text-white placeholder-slate-500 transition focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      soundRef.current.playHover();
-                      setShowPassword(!showPassword);
-                    }}
-                    className="absolute right-3.5 top-3 text-slate-400 hover:text-amber-300"
+                <div className="flex items-center gap-3">
+                  <div
+                    style={{ background: theme.buttonGradient }}
+                    className="flex h-11 w-11 items-center justify-center rounded-2xl shadow-lg"
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+                    <Cpu className="h-5 w-5 text-slate-950" />
+                  </div>
+                  <div>
+                    <div className="text-base font-bold text-white">NexCampus ERP</div>
+                    <div style={{ color: theme.accentText }} className="text-xs font-medium">
+                      Engineering Portal
+                    </div>
+                  </div>
+                </div>
+
+                <h1
+                  style={{ color: theme.accentText }}
+                  className="mt-7 text-xl font-extrabold leading-snug"
+                >
+                  Select Workspace Role
+                </h1>
+                <p className="mt-1.5 text-xs leading-relaxed text-slate-300/80">
+                  Choose your administrative or academic role to enter the university system.
+                </p>
+
+                <div className="mt-6 space-y-3">
+                  {ROLES.map((item) => {
+                    const Icon = item.icon;
+                    const active = role === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          setRole(item.id);
+                          setLocalError('');
+                          playTone('chime', true);
+                        }}
+                        style={{
+                          borderColor: active ? theme.border : 'rgba(255,255,255,0.08)',
+                          backgroundColor: active ? theme.coneMid : 'rgba(15, 23, 42, 0.6)',
+                        }}
+                        className="w-full rounded-2xl border p-3.5 text-left transition-all duration-200 hover:bg-white/5"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Icon
+                              style={{ color: active ? theme.accentText : '#94a3b8' }}
+                              className="h-4 w-4"
+                            />
+                            <span className="text-sm font-bold text-white">{item.title}</span>
+                          </div>
+                          {active && (
+                            <span
+                              style={{
+                                borderColor: theme.border,
+                                color: theme.accentText,
+                              }}
+                              className="rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase"
+                            >
+                              Active
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-1 text-[11px] leading-relaxed text-slate-400">
+                          {item.subtitle}
+                        </p>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={submitting}
-                onMouseEnter={() => {
-                  ctaHoverRef.current = true;
-                  soundRef.current.playHover();
+              <div className="mt-6 border-t border-white/10 pt-3 text-[11px] text-slate-400">
+                NexCampus Gateway • AY 2026–27
+              </div>
+            </div>
+
+            {/* Right Sign-In Form */}
+            <div className="flex flex-col justify-center p-7 sm:p-9 md:col-span-7">
+              <div
+                style={{
+                  borderColor: theme.border,
+                  color: theme.accentText,
+                  backgroundColor: theme.coneMid,
                 }}
-                onMouseLeave={() => {
-                  ctaHoverRef.current = false;
-                }}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-400 py-3.5 text-sm font-extrabold text-slate-950 shadow-[0_10px_35px_rgba(245,158,11,0.4)] transition hover:brightness-110 disabled:opacity-50"
+                className="inline-flex w-fit items-center rounded-full border px-3 py-1 text-xs font-semibold"
               >
-                {submitting ? 'Signing In...' : `Continue as ${role}`}
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </form>
+                {activeRole.badge}
+              </div>
+
+              <h2 style={{ color: theme.accentText }} className="mt-3.5 text-2xl font-extrabold">
+                Welcome Back
+              </h2>
+              <p className="mt-1 text-xs text-slate-300/80">
+                Sign in with your institutional email or ID
+              </p>
+
+              {displayError && (
+                <div className="mt-4 flex items-center gap-2 rounded-xl border border-amber-400/50 bg-amber-500/15 px-3 py-2 text-xs text-amber-200">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-amber-300" />
+                  <span>{displayError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+                <div>
+                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-300">
+                    Email or Institutional ID
+                  </label>
+                  <div className="relative">
+                    <Mail
+                      style={{ color: theme.accentText }}
+                      className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 opacity-80"
+                    />
+                    <input
+                      type="text"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Enter your email or ID..."
+                      autoComplete="username"
+                      className="w-full rounded-xl border border-white/15 bg-[#161e31]/90 py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-400 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-300">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <Lock
+                      style={{ color: theme.accentText }}
+                      className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 opacity-80"
+                    />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter your password..."
+                      autoComplete="current-password"
+                      className="w-full rounded-xl border border-white/15 bg-[#161e31]/90 py-2.5 pl-10 pr-10 text-sm text-white placeholder-slate-400 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  style={{
+                    background: theme.buttonGradient,
+                    color: theme.buttonText,
+                    boxShadow: `0 10px 26px ${theme.glow}`,
+                  }}
+                  className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-extrabold transition-transform duration-200 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60"
+                >
+                  <span>{submitting ? 'Signing in...' : activeRole.cta}</span>
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
