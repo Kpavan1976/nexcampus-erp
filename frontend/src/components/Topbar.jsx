@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Search, Bell, Shield, UserCheck, AlertTriangle, LogOut } from 'lucide-react';
+import { Search, Bell, Shield, UserCheck, AlertTriangle } from 'lucide-react';
+import AnimatedLogoutButton from './AnimatedLogoutButton';
 
 export default function Topbar({
   role,
@@ -29,7 +30,6 @@ export default function Topbar({
       </button>
 
       <div className="flex items-center gap-3">
-        {/* Static Active Role Badge (Non-clickable) */}
         <div className="hidden md:flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-300 select-none">
           <RoleIcon className="h-3.5 w-3.5" />
           <span>{role} Portal</span>
@@ -86,14 +86,8 @@ export default function Topbar({
             <div className="text-xs font-semibold text-white truncate max-w-[150px]">{user?.full_name}</div>
             <div className="text-[10px] text-cyan-400">{user?.role} • {user?.department}</div>
           </div>
-          <button
-            onClick={onLogout}
-            title="Sign Out"
-            className="flex items-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-500/20 transition"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            <span className="hidden lg:inline">Logout</span>
-          </button>
+
+          <AnimatedLogoutButton onLogout={onLogout} />
         </div>
       </div>
     </header>
