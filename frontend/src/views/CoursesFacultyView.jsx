@@ -1,143 +1,126 @@
-import React, { useState } from 'react';
-import { BookOpen, Plus, Mail, Phone, Award } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { BookOpen, Clock, Building2, Calendar, CheckCircle2 } from 'lucide-react';
+import AdminFacultyHubView from './AdminFacultyHubView';
+import { facultyGovernanceApi } from '../services/facultyGovernanceApi';
 
-export default function CoursesFacultyView({ courses, faculty, role, onAddCourse }) {
-  const [code, setCode] = useState('');
-  const [title, setTitle] = useState('');
-  const [department, setDepartment] = useState('AIML');
-  const [semester, setSemester] = useState(3);
-  const [credits, setCredits] = useState(4);
-  const [facultyId, setFacultyId] = useState(faculty[0]?.id || 1);
+export default function CoursesFacultyView({ role = 'Admin', user, onNotify }) {
+  const [storeData, setStoreData] = useState({
+    faculty: [],
+    allocations: [],
+    timetable: [],
+    audits: [],
+  });
 
-  const handleCreate = (e) => {
-    e.preventDefault();
-    if (!code.trim() || !title.trim()) return;
-    const chosenFac = faculty.find((f) => f.id === Number(facultyId)) || faculty[0];
-    onAddCourse({
-      code: code.toUpperCase(),
-      title,
-      department,
-      semester: Number(semester),
-      credits: Number(credits),
-      faculty_id: chosenFac.id,
-      faculty_name: chosenFac.name
+  useEffect(() => {
+    facultyGovernanceApi.getAll().then((res) => {
+      if (res) setStoreData(res);
     });
-    setCode('');
-    setTitle('');
-  };
+  }, []);
+
+  if (role === 'Admin') {
+    return <AdminFacultyHubView role={role} onNotify={onNotify} />;
+  }
+
+  const matchedFaculty =
+    storeData.faculty.find(
+      (f) =>
+        f.email?.toLowerCase() === user?.email?.toLowerCase() ||
+        f.full_name?.toLowerCase() === user?.full_name?.toLowerCase()
+    ) || storeData.faculty[0];
+
+  const myAllocations = matchedFaculty
+    ? storeData.allocations.filter((a) => a.faculty_id === matchedFaculty.id)
+    : storeData.allocations;
+
+  const myTimetable = matchedFaculty
+    ? storeData.timetable.filter((t) => t.faculty_id === matchedFaculty.id)
+    : storeData.timetable;
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Courses & Faculty Allocation</h1>
-        <p className="text-sm text-slate-400">Outcome-Based Education (OBE) curriculum mapping & assigned instructors</p>
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-white/10 bg-[#111827]/85 p-5 backdrop-blur-xl">
+        <span className="rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-cyan-300">
+          Faculty Academic View
+        </span>
+        <h1 className="mt-1.5 text-xl font-bold text-white">My Assigned Courses & Weekly Schedule</h1>
+        <p className="text-xs text-slate-400">
+          Viewing active term subject allocations and classroom timetable for{' '}
+          <span className="font-semibold text-slate-200">{user?.full_name || matchedFaculty?.full_name}</span>.
+        </p>
       </div>
 
-      {role === 'Admin' && (
-        <form onSubmit={handleCreate} className="glass-card rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
-          <div>
-            <label className="block text-xs text-slate-400 mb-1">Course Code</label>
-            <input
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="UE25CS4305"
-              className="w-full rounded-xl border border-white/10 bg-[#0B0F19] px-3 py-2 text-sm text-white"
-            />
-          </div>
-          <div className="lg:col-span-2">
-            <label className="block text-xs text-slate-400 mb-1">Subject Title</label>
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Cloud Computing & Microservices"
-              className="w-full rounded-xl border border-white/10 bg-[#0B0F19] px-3 py-2 text-sm text-white"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-slate-400 mb-1">Dept & Sem</label>
-            <div className="flex gap-2">
-              <select
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-                className="w-1/2 rounded-xl border border-white/10 bg-[#0B0F19] px-2 py-2 text-sm text-white"
-              >
-                {['AIML', 'CSE', 'ECE', 'ME'].map((d) => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-              <select
-                value={semester}
-                onChange={(e) => setSemester(e.target.value)}
-                className="w-1/2 rounded-xl border border-white/10 bg-[#0B0F19] px-2 py-2 text-sm text-white"
-              >
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
-                  <option key={s} value={s}>S{s}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs text-slate-400 mb-1">Assigned Faculty</label>
-            <select
-              value={facultyId}
-              onChange={(e) => setFacultyId(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-[#0B0F19] px-3 py-2 text-sm text-white"
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {myAllocations.map((alloc) => {
+          const audit = storeData.audits.find((a) => a.allocation_id === alloc.id);
+          return (
+            <div
+              key={alloc.id}
+              className="flex flex-col justify-between rounded-2xl border border-white/10 bg-[#111827]/85 p-5 backdrop-blur-xl"
             >
-              {faculty.map((f) => (
-                <option key={f.id} value={f.id}>{f.name}</option>
-              ))}
-            </select>
-          </div>
-          <button
-            type="submit"
-            className="flex items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
-          >
-            <Plus className="h-4 w-4" /> Allocate
-          </button>
-        </form>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {courses.map((c) => (
-          <div key={c.id} className="glass-card rounded-2xl p-5 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="rounded-lg bg-cyan-500/15 px-2.5 py-1 font-mono text-xs font-semibold text-cyan-300">
-                  {c.code}
-                </span>
-                <span className="text-xs font-medium text-slate-400">{c.credits} Credits</span>
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-xs font-bold text-cyan-400">{alloc.subject_code}</span>
+                  <span className="rounded-lg bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 text-[10px] font-semibold text-indigo-300">
+                    {alloc.subject_type}
+                  </span>
+                </div>
+                <h3 className="mt-2 text-sm font-bold text-white">{alloc.subject_name}</h3>
+                <p className="mt-1 text-xs text-slate-400">
+                  {alloc.department} • {alloc.semester} (Section {alloc.section})
+                </p>
               </div>
-              <h3 className="mt-3 text-base font-bold text-white">{c.title}</h3>
-              <p className="mt-1 text-xs text-indigo-300">
-                {c.department} Department • Semester {c.semester}
-              </p>
+
+              <div className="mt-4 border-t border-white/10 pt-3">
+                <div className="flex items-center justify-between text-[11px] mb-1.5">
+                  <span className="text-slate-400 flex items-center gap-1">
+                    <BookOpen className="h-3.5 w-3.5 text-cyan-400" /> Syllabus Progress
+                  </span>
+                  <span className="font-bold text-cyan-300">{audit?.syllabus_pct ?? 0}%</span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-cyan-400"
+                    style={{ width: `${audit?.syllabus_pct ?? 0}%` }}
+                  />
+                </div>
+              </div>
             </div>
-            <div className="mt-4 border-t border-white/10 pt-3 flex items-center gap-2 text-xs text-slate-300">
-              <BookOpen className="h-4 w-4 text-indigo-400 shrink-0" />
-              <span className="truncate">{c.faculty_name}</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      <div>
-        <h2 className="text-lg font-bold text-white mb-4">Engineering Faculty Roster ({faculty.length})</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {faculty.map((f) => (
-            <div key={f.id} className="glass-card rounded-2xl p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="text-base font-bold text-white">{f.name}</div>
-                  <div className="text-xs text-cyan-400">{f.designation}</div>
-                </div>
-                <span className="rounded-lg bg-indigo-500/20 px-2.5 py-1 text-xs font-semibold text-indigo-300">
-                  {f.department}
+      <div className="rounded-2xl border border-white/10 bg-[#111827]/85 p-5 backdrop-blur-xl">
+        <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-3">
+          <h2 className="text-sm font-bold text-white flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-amber-400" /> My Weekly Class Timetable
+          </h2>
+          <span className="text-xs text-slate-400">{myTimetable.length} scheduled slots</span>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {myTimetable.map((slot) => (
+            <div
+              key={slot.id}
+              className="rounded-xl border border-white/10 bg-[#0B0F19]/90 p-3.5 space-y-1.5"
+            >
+              <div className="flex items-center justify-between">
+                <span className="rounded bg-indigo-500/20 px-2 py-0.5 text-[11px] font-bold text-indigo-300">
+                  {slot.day_of_week}
+                </span>
+                <span className="flex items-center gap-1 text-[11px] text-slate-400">
+                  <Clock className="h-3 w-3" /> {slot.time_slot}
                 </span>
               </div>
-              <div className="mt-4 space-y-1.5 text-xs text-slate-400">
-                <div className="flex items-center gap-2"><Award className="h-3.5 w-3.5 text-slate-500" /> ID: {f.faculty_code}</div>
-                <div className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-slate-500" /> {f.email}</div>
-                <div className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-slate-500" /> {f.phone}</div>
+              <div className="text-xs font-bold text-white">
+                {slot.subject_code} • {slot.semester} (Sec {slot.section})
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-amber-300 pt-1">
+                <span className="flex items-center gap-1">
+                  <Building2 className="h-3 w-3" /> {slot.room_no}
+                </span>
+                <span className="flex items-center gap-1 text-emerald-400">
+                  <CheckCircle2 className="h-3 w-3" /> {slot.hours} hrs/wk
+                </span>
               </div>
             </div>
           ))}

@@ -191,6 +191,7 @@ else setActiveTab('dashboard');
                   courses={courses}
                   faculty={faculty}
                   role={role}
+                  user={user}
                   onAddCourse={handleAddCourse}
                 />
               )}
