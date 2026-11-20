@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Search, Bell, Shield, UserCheck, GraduationCap, AlertTriangle, LogOut } from 'lucide-react';
+import { Search, Bell, Shield, UserCheck, AlertTriangle, LogOut } from 'lucide-react';
 
 export default function Topbar({
   role,
-  setRole,
   user,
   onLogout,
   onOpenSearch,
@@ -12,10 +11,7 @@ export default function Topbar({
 }) {
   const [notifOpen, setNotifOpen] = useState(false);
 
-  const roles = [
-  { id: 'Admin', icon: Shield },
-  { id: 'Faculty', icon: UserCheck },
-];
+  const RoleIcon = role === 'Admin' ? Shield : UserCheck;
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-white/[0.08] bg-[#0B0F19]/85 px-4 lg:px-8 backdrop-blur-xl">
@@ -33,25 +29,10 @@ export default function Topbar({
       </button>
 
       <div className="flex items-center gap-3">
-        <div className="hidden md:flex items-center rounded-xl border border-white/10 bg-[#111827] p-1">
-          {roles.map((r) => {
-            const Icon = r.icon;
-            const active = role === r.id;
-            return (
-              <button
-                key={r.id}
-                onClick={() => setRole(r.id)}
-                className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition ${
-                  active
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                <span>{r.id}</span>
-              </button>
-            );
-          })}
+        {/* Static Active Role Badge (Non-clickable) */}
+        <div className="hidden md:flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-300 select-none">
+          <RoleIcon className="h-3.5 w-3.5" />
+          <span>{role} Portal</span>
         </div>
 
         <div className="relative">
