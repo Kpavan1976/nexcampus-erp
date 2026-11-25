@@ -162,8 +162,8 @@ else setActiveTab('dashboard');
               {activeTab === 'dashboard' && (
                 <DashboardView
                   students={students}
-                  onNotify={notify}
-                  onSelectStudent={(stu) => setSelectedStudent(stu)}
+                  faculty={faculty}
+                  onNavigate={setActiveTab}
                 />
               )}
               {activeTab === 'students' && (
